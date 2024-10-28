@@ -1,5 +1,5 @@
 {
-  "name": "hering-aid",
+  "name": "protrack",
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
@@ -12,9 +12,8 @@
     "dev": "nodemon app.js",         
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "build": "npm install"          
-},
+    "lint:fix": "eslint --fix ."
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
