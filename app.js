@@ -30,12 +30,12 @@ connectDB();
 
 
 app.listen(8000, () => {
-    console.log("Server running on port 3000");
+    console.log("Server running on port 8000");
 });
 
 
 app.get('/url', (req, res) => {
-    return res.send('Hello World!');
+    return res.send('Welcome to protrack!');
 });
 
 
