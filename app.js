@@ -1,12 +1,17 @@
 import express from 'express';
 import bodyParser from 'body-parser'
 import connectDB from './database.js';
+import cors from 'cors';
 import { authRouter, categtoriesRouter, cutsomerRouter, employeeRouter, OpportunityRouter, projectRouter, reportRoutes, RiskRouter, spaceRouter, teamMemberRouter, teamsRouter, technologiesRouter, userRouter} from './routes/index.js';
 
 
 
 
 const app = express();
+
+app.use(cors({
+    origin: '*'
+  }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
