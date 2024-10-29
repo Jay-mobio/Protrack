@@ -1,4 +1,5 @@
 import { ExecutionLogs, Organisation, User } from "../models/index.js"
+import { errorResponse, successResponse } from "../utils/methods.js";
 import { getClickupEmployees } from "./index.js";
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
@@ -20,7 +21,7 @@ export const getMonthlyReports = async (req, res) => {
                 last_executed: Date.now()
             })
             if (!user_req) {
-                return res.status(500).json({ error: 'Something went wrong' });
+                return res.status(500).json(errorResponse("Internal Server Error"));
             }
             executeLog.save();
         }
@@ -31,7 +32,7 @@ export const getMonthlyReports = async (req, res) => {
         const members = await prepareDbMembers(users);
 
         if (!members || members.length === 0) {
-            return res.status(404).json({ error: 'No members found' });
+            return res.status(404).json(errorResponse("No Members found"));
         }
 
         const currentTime = new Date();
@@ -49,7 +50,7 @@ export const getMonthlyReports = async (req, res) => {
                 worksheet.addRow(headers);
             } else {
                 console.error("Invalid member data:", members[0]);
-                return res.status(500).json({ error: 'Invalid member data' });
+                return res.status(500).json(errorResponse('Invalid member data'));
             }
 
             // Add data rows
@@ -72,11 +73,11 @@ export const getMonthlyReports = async (req, res) => {
                 }
             });
         } else {
-            return res.json({ members });
+            return res.json(successResponse(members));
         }
     } catch (error) {
         if (!res.headersSent) {
-            return res.status(500).json({ error: error.message });
+            res.status(500).json(errorResponse("Internal Server Error"))
         } else {
             console.error('Headers already sent:', error.message);
         }

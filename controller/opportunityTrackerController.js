@@ -1,7 +1,5 @@
 import { OpportunityAuditLog, OpportunityTracker } from "../models/index.js";
-import moment from "moment";
-import mongoose from "mongoose";
-import { auditLogEntry } from "../utils/methods.js";
+import { auditLogEntry, errorResponse, successResponse } from "../utils/methods.js";
 
 export const createOpportunity = async (req,res) =>{
     try{
@@ -34,9 +32,9 @@ export const createOpportunity = async (req,res) =>{
             remarks: data.remarks
         })
         await newOpportunity.save();
-        return res.json({data:newOpportunity})
+        return res.json(successResponse(newOpportunity))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -44,20 +42,20 @@ export const getOpportunity = async (req,res) => {
     try {
         const existingOpportunity = await OpportunityTracker.findById(req.params.id);
         if (!existingOpportunity){
-            return res.status(404).json({error:"Opportunity not found"})
+            return res.status(404).json(errorResponse("Opportunity not found"))
         }
-        return res.json({data: existingOpportunity})
+        return res.json(successResponse(existingOpportunity))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
 export const getOpportunities = async (req,res) => {
     try {
         const opportunities = await OpportunityTracker.find();
-        return res.json({data: opportunities})
+        return res.json(successResponse(opportunities))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -82,12 +80,12 @@ export const updateOpportunity = async(req,res) => {
         {new:true}
     );
         if (!opportunity){
-            return res.status(404).json({error: "Opportunity not found"})
+            return res.status(404).json(errorResponse("Opportunity not found"))
         }
         auditLogEntry(OpportunityAuditLog,data,existingOpportunity,req.params.id,req.user._id, "UPDATE")
         return res.json({data:opportunity})
     } catch(error){
-        res.status(500).json({error: error.message})
+        res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -95,21 +93,21 @@ export const deleteOpportunity = async(req,res) => {
     try{
         const opportunity = await OpportunityTracker.findByIdAndDelete(req.params.id)
         if (!opportunity){
-            return res.status(404).json({error: "Opportunity not found"})
+            return res.status(404).json(errorResponse("Opportunity not found"))
         }
         auditLogEntry(OpportunityAuditLog,"","",req.params.id,req.user._id, "DELETE")
-        return res.json({data:opportunity})
+        return res.json(successResponse(opportunity))
     } catch(error){
-        res.status(500).json({error: error.message})
+        res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
 export const getOpportunityAuditLogs = async(req, res) => {
     try{
         logs = await OpportunityAuditLog.find()
-        return res.json({data: logs})
+        return res.json(successResponse(logs))
     } catch(error){
-        res.status(500).json({error: error.message})
+        res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 

@@ -62,4 +62,20 @@ async function auditLogDataInsert(auditModel, id, action, field, beforeValue, af
     }
 }
 
-export {auditLogEntry}
+function successResponse(data, message = '') {
+    return {
+        status: true,
+        message: message,
+        data: data
+    };
+}
+
+function errorResponse(message) {
+    return {
+        status: false,
+        message: message
+    };
+}
+
+
+export {auditLogEntry, successResponse, errorResponse}

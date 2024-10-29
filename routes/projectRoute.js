@@ -7,7 +7,7 @@ router.use(isAuthenticated)
 
 router.get("",addClickupProject);
 router.post("",createProject);
-router.get("/list",getProjects);
+router.get("/get-projects/:id",getProjects);
 router.put("/:id",updateProject);
 router.post("/clickup-logs/:id",getClickupProjectLogs)
 router.get("/clickup-logs/:id",getClickupLogs)

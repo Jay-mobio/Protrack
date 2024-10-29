@@ -1,6 +1,4 @@
 import { RiskTracker, RiskTrackerAuditLog } from "../models/index.js";
-import mongoose from "mongoose";
-import moment from "moment";
 import { auditLogEntry } from "../utils/methods.js";
 
 export const createRisk = async (req,res) =>{

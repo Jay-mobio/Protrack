@@ -9,15 +9,15 @@ dotenv.config()
 const JWT_SECRET = process.env.JWT_SECRET_KEY
 
 export const isAuthenticated = async (req,res,next) =>{
-    const authHeader = req.headers.authorization;
     
-    if(!authHeader || !authHeader.startsWith('Bearer ')){
+    const token = req.headers['auth-token'];
+    
+    if(!token){
         return res.status(403).json({error:"Not Authorized"})
     }
-    const token = authHeader.split(' ')[1];
     try{
         const decode = jwt.verify(token,process.env.JWT_SECRET_KEY)
-        req.user = await User.findById(decode.id)
+        req.user = await User.findById(decode.id)        
         next()
     } catch(err){
         console.log(err.message);

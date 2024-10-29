@@ -1,5 +1,5 @@
 import { Categories, CategoriesAuditLog} from "../models/index.js";
-import { auditLogEntry } from "../utils/methods.js";
+import { auditLogEntry, errorResponse, successResponse } from "../utils/methods.js";
 
 export const createCategory = async (req,res) =>{
     try{
@@ -10,16 +10,16 @@ export const createCategory = async (req,res) =>{
         })
 
         if (existingCategory){
-            return res.status(404).json({error: "Category exists"})
+            return res.json(errorResponse("Category already exists"))
         }
         const newCategory = new Categories({
             category_name: data.category_name,
             user_category: data.user_category
         })
         await newCategory.save();
-        return res.json({data:newCategory})
+        return res.json(successResponse(newCategory))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -27,20 +27,20 @@ export const getCategory = async (req,res) => {
     try {
         const existingCategory = await Categories.findById(req.params.id);
         if (!existingCategory){
-            return res.status(404).json({error:"Category not found"})
+            return res.status(404).json(errorResponse("Category not found"))
         }
         return res.json({data: existingCategory})
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
 export const getCategories = async (req,res) => {
     try {
         const category = await Categories.find();
-        return res.json({data: category})
+        return res.json(successResponse(category))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -57,12 +57,12 @@ export const updateCategory = async(req,res) => {
         {new:true}
     );
         if (!category){
-            return res.status(404).json({error: "Category not found"})
+            return res.status(errorResponse("Category not found"))
         }
         auditLogEntry(CategoriesAuditLog,data,existingCategory,req.params.id,req.user._id, "UPDATE")
-        return res.json({data:category})
+        return res.json(successResponse(category))
     } catch(error){
-        res.status(500).json({error: error.message})
+        res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -70,21 +70,21 @@ export const deleteCategory = async(req,res) => {
     try{
         const category = await Categories.findByIdAndDelete(req.params.id)
         if (!category){
-            return res.status(404).json({error: "Category not found"})
+            return res.status(404).json(errorResponse("Category not found"))
         }
         auditLogEntry(CategoriesAuditLog,"","",req.params.id,req.user._id, "DELETE")
-        return res.json({data:category})
+        return res.json(successResponse(category))
     } catch(error){
-        res.status(500).json({error: error.message})
+        res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
 export const getCategroyAuditLogs = async(req, res) => {
     try{
         const logs = await CategoriesAuditLog.find({category_id: req.params.id})
-        return res.json({data: logs})
+        return res.json(successResponse(logs))
     } catch(error){
-        res.status(500).json({error: error.message})
+        res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 

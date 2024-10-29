@@ -1,6 +1,6 @@
 import { Technologies, TechnologyAuditLog } from "../models/index.js";
 import moment from "moment";
-import { auditLogEntry } from "../utils/methods.js";
+import { auditLogEntry, errorResponse, successResponse } from "../utils/methods.js";
 
 export const createTechnology = async (req,res) =>{
     try{
@@ -38,10 +38,10 @@ export const getTechnology = async (req,res) => {
 
 export const getTechnologies = async (req,res) => {
     try {
-        const Technology = await Technologies.find();
-        return res.json({data: Technology})
+        const Technology = await Technologies.find({organisation_id:req.query.organisation_id});
+        return res.json(successResponse(Technology))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 

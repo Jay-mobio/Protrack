@@ -1,7 +1,7 @@
 import axios from "axios";
 import bcrypt from 'bcrypt'
-import { Employee, EmployeeAuditLog } from "../models/index.js";
-import { auditLogEntry } from "../utils/methods.js";
+import { Department, Employee, EmployeeAuditLog, Organisation, ResourceType, Skills, Status } from "../models/index.js";
+import { auditLogEntry, errorResponse, successResponse } from "../utils/methods.js";
 
 const BASE_URL = process.env.CLICKUP_BASE_URL
 const TOKEN = process.env.CLICKUP_AUTH_TOKEN
@@ -37,9 +37,9 @@ export const getClickupEmployees = async (req,res) =>{
             }
             }
         }
-        return res.status(200).json({data:employeeAddedCount});
+        return res.status(200).json(successResponse(employeeAddedCount));
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -75,10 +75,10 @@ export const createEmployee = async (req, res) => {
         emaployee.password = await bcrypt.hash(emaployee.password,salt)
 
         await emaployee.save();
-        return res.json({ msg: "Employee added successfully", emaployee: emaployee });
+        return res.json(successResponse(emaployee));
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Internal Server Error" });
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 };
 
@@ -120,14 +120,14 @@ export const updateEmployee = async(req, res) => {
             },
             {new: true});
         if (!updated_emaployee){
-            return res.status(404).json({error: "Employee not found"});
+            return res.status(404).json(errorResponse("Employee not found"))
         }
         
         auditLogEntry(EmployeeAuditLog,data,existingEmployee,id,req.user._id, "UPDATE")
-        return res.json({"updated_emaployee": updated_emaployee});
+        return res.json(successResponse(updated_emaployee));
     }catch(err){
         console.error(err);
-        return res.status(500).json({error: "Internal Server Error"});
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 };
 
@@ -136,9 +136,9 @@ export const getEmployee = async(req, res) => {
         const emaployeeId = req.params.id;
         const emaployee = await Employee.findById(emaployeeId);
         if (!emaployee) {
-            return res.status(404).json({ error: "Employee not found" });
+            return res.status(404).json(errorResponse("Employee not found"))
         }
-        res.json({ emaployee });
+        return res.json(successResponse(emaployee));
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -147,20 +147,20 @@ export const getEmployee = async(req, res) => {
 
 export const getEmployees = async(req, res) => {
     try {
-        const emaployees = await Employee.find();
-        return res.json({ emaployees });
+        const emaployees = await Employee.find({organisation_id: req.params.organisation_id});
+        return res.json(successResponse(emaployees));
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Internal Server Error" });
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 };
 
 export const getEmployeeAuditLogs = async(req, res) => {
     try{
         logs = await EmployeeAuditLog.find()
-        return res.json({data: logs})
+        return res.json(successResponse(logs));
     } catch(error){
-        res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -168,15 +168,84 @@ export const deleteemaployee = async(req,res) => {
     try{
         const emaployee = await Employee.findByIdAndDelete(req.params.id)
         if (!emaployee){
-            return res.status(404).json({error: "Employee not found"})
+            return res.status(404).json(errorResponse("Employee not found"))
         }
         auditLogEntry(EmployeeAuditLog,"","",req.params.id,req.user._id, "DELETE")
-        return res.json({data:emaployee})
+        return res.json(successResponse(emaployee));
     } catch(error){
-        res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 };
 
+export const getResourceTypeMetadata = async (req,res) =>{
+    try{        
+        const resources_type = await ResourceType.find()
+        return res.json(successResponse(resources_type))
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json(errorResponse("Internal Server Error"));
+    }
+}
+
+export const getStatusMetadata = async (req,res) =>{
+    try{
+        const status = await Status.find();
+        return res.json(successResponse(status));
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json(errorResponse("Internal Server Error"));
+    }
+}
+
+export const getDepartmentMetadata = async (req,res) =>{
+    try{
+        const department = await Department.find();
+        return res.json(successResponse(department));
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json(errorResponse("Internal Server Error"));
+    }
+    
+}
+
+export const getSkillsMetadata = async (req,res) =>{
+    try{
+        const skills = await Skills.find();
+        return res.json(successResponse(skills));
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json(errorResponse("Internal Server Error"));
+    }
+    
+}
+
+export const getOrganisationMetadata = async (req,res) =>{
+    try{
+        const orgs = await Organisation.find();
+        return res.json(successResponse(orgs));
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json(errorResponse("Internal Server Error"));
+    }
+    
+}
+
+export const getReportingManagerMetadata = async (req,res) =>{
+    const { organisation_id } = req.params;
+
+    try {
+        const users = await Employee.find({
+            $or: [{ deleted: null }, { deleted: "0" }],
+            organisation_id: organisation_id,
+            email: { $ne: "" }
+        }).sort({ id: 1 });
+
+        return res.json(successResponse(users));
+    } catch (error) {
+        console.error(`Error: ${error.message}`);
+        return res.status(500).json(errorResponse("Internal Server Error"));
+    }
+};
 // async function aduitLogEntry(data, beforeData, id, emaployeeID, action) {
 //     try {        
 //         if (action === "DELETE") {

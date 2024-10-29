@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import axios from "axios";
 import moment from "moment";
 import {Space, Project, TeamMember, ProjectMatrixReport, ProjectAuditLog, ProjectMetricsAuditLog} from "../models/index.js";
-import { auditLogEntry } from "../utils/methods.js";
+import { auditLogEntry, errorResponse, successResponse } from "../utils/methods.js";
 
 dotenv.config();
 const BASE_URL = process.env.CLICKUP_BASE_URL
@@ -18,8 +18,7 @@ export const addClickupProject = async (req, res) => {
       // Iterate over spaces and fetch projects for each space
       const spacesWithProjects = await Promise.all(
         spaces.map(async (space) => {
-          try {
-            
+          try {            
             // Make the API request to ClickUp to get projects for the current space
             const projectUrl = await axios.get(`${BASE_URL}/api/v2/space/${space.sapce_id}/folder?archived=false`, {
               headers: {
@@ -73,23 +72,24 @@ export const addClickupProject = async (req, res) => {
       );
   
       // Return the spaces with the fetched projects
-      res.status(200).json({
+      const data = {
         message: "Spaces and their projects retrieved successfully",
         spaces: spacesWithProjects,
-      });
+      }
+      return res.status(200).json(successResponse(data));
   
     } catch (error) {
       // Handle errors for the main process
-      res.status(500).json({ error: error.message });
+      return res.status(500).json(errorResponse(error.message));
     }
   };
 
 export const getProjects = async (req, res) => {
   try {    
-    const projects = await Project.find(); // Fetch all projects from the database
-    res.status(200).json({ message: "Projects retrieved successfully", projects });
+    const projects = await Project.find({organisation_id: req.params.id}); // Fetch all projects from the database
+    return res.status(200).json(successResponse(projects));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json(errorResponse(error.message));
   }
 };
 
@@ -97,7 +97,7 @@ export const createProject = async(req,res) =>{
   try {
     const existingProject = await Project.findOne({project_id:req.body.project_id});
     if (existingProject){
-      return res.status(409).json({error: "Project already exists"});
+      return res.status(409).json(errorResponse("Project already exists"));
     }
     const newProject = new Project(
       {project_name : req.body.project_name,
@@ -133,9 +133,9 @@ export const createProject = async(req,res) =>{
       created_by : req.body.created_by}
     )
     await newProject.save();
-    res.status(409).json({ message: "Projects retrieved successfully", newProject });
+    return res.status(200).json(successResponse(newProject));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json(errorResponse(error.message));
   }
 }
 
@@ -178,12 +178,12 @@ export const updateProject = async (req, res) => {
       {new: true}
     );
     if (!project){
-      return res.status(404).json({ message: "Project not found"});
+      return res.status(404).json(errorResponse("Project not found"));
     }
     auditLogEntry(ProjectAuditLog,data,existingProject,req.params.id,req.user._id, "UPDATE")
-    return res.json({"project_user": project});
+    return res.status(200).json(successResponse(project));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json(errorResponse(error.message));
   }
 }
 
@@ -191,7 +191,7 @@ export const getClickupProjectLogs = async (req, res) =>{
   try {
     const project = await Project.findById(req.params.id)
     if (!project){
-      res.status(404).json({ message: "Project not found"});
+      return res.status(404).json(errorResponse("Project not found"));
     }
     const members = await TeamMember.find({
       project_id: req.params.id,
@@ -238,9 +238,9 @@ export const getClickupProjectLogs = async (req, res) =>{
       logList.push(metrics);
     }
     
-    return res.json({data: logList});
+    return res.status(200).json(successResponse(logList));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json(errorResponse(error.message));
   }
 }
 
@@ -249,7 +249,7 @@ export const getClickupLogs = async (req, res) => {
     
     const projects = await Project.findById(req.params.id);
     if (!projects){
-      return res.status(404).json({ error:"Project not found"});
+      return res.status(404).json(errorResponse("Project not found"));
     }    
     if (req.query.listName){
       const logs = await ProjectMatrixReport.findById({duration_range: req.query.listName, project_id: req.param.id})
@@ -258,10 +258,10 @@ export const getClickupLogs = async (req, res) => {
       const duration_range = getDateRangeString(req.query.startDate, req.query.endDate)
       
       const logs = await ProjectMatrixReport.find({duration_range: duration_range,project_id: req.params.id})
-      return res.json({data: logs})
+      return res.status(200).json(successResponse(logs));
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json(errorResponse(error.message));
   }
 };
 
@@ -294,15 +294,13 @@ export const updateClickupLogs = async (req, res) => {
       {new:true}
     );
     if (!log){
-      return res.status(404).json({message:"Log not found"});
+      return res.status(404).json(errorResponse("Log not found"));
     }
-    console.log(data);
-    console.log(existingLog);
-    
+
     auditLogEntry(ProjectMetricsAuditLog,data,existingLog,req.params.id,req.user._id, "UPDATE")
-    return res.json({message: "Log updated successfully", data: log})
+    return res.status(200).json(successResponse(log));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json(errorResponse(error.message));
   }
 };
 
@@ -310,30 +308,30 @@ export const deleteClickupLog = async (req, res) => {
   try{
     const log = await ProjectMatrixReport.findOneAndDelete(req.params.id);
     if(!log){
-      res.status(404).json({ error:"Log not found"});
+      return res.status(404).json(errorResponse("Log not found"));
     }
     auditLogEntry(ProjectMetricsAuditLog,"","",req.params.id,req.user._id, "DELETE")
-    res.json({ message: "Log deleted successfully"});
+    return res.status(200).json(successResponse(log));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json(errorResponse(error.message));
   }
 }
 
 export const getProjectAudittLogs = async(req, res) => {
   try{
-      logs = await ProjectAuditLog.find()
-      return res.json({data: logs})
+      const logs = await ProjectAuditLog.find()
+      return res.status(200).json(successResponse(logs));
   } catch(error){
-      res.status(500).json({error: error.message})
+    return res.status(500).json(errorResponse("Internal Server Error"));
   }
 }
 
 export const getProjectMetricsAuditLogs = async(req, res) => {
   try{
-      logs = await ProjectMetricsAuditLog.find()
-      return res.json({data: logs})
+      const logs = await ProjectMetricsAuditLog.find()
+      return res.status(200).json(successResponse(logs));
   } catch(error){
-      res.status(500).json({error: error.message})
+      return res.status(500).json(errorResponse(error.message));
   }
 }
 

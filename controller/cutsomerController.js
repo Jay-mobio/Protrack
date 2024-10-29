@@ -1,5 +1,5 @@
 import { Customer, CustomerAuditLog } from "../models/index.js";
-import { auditLogEntry } from "../utils/methods.js";
+import { auditLogEntry, errorResponse, successResponse } from "../utils/methods.js";
 
 export const createCutsomer = async (req,res) =>{
     try{
@@ -8,7 +8,7 @@ export const createCutsomer = async (req,res) =>{
         console.log(existingCustomer);
               
         if (existingCustomer){
-            return res.status(404).json({error: "Customer exists"})
+            return res.status(404).json(errorResponse("Customer already exists"))
         }
         const newCustomer = new Customer({
             customer_name: data.customer_name,
@@ -19,9 +19,9 @@ export const createCutsomer = async (req,res) =>{
             organisation_id: data.organisation_id
         })
         await newCustomer.save();
-        return res.json({data:newCustomer})
+        return res.json(successResponse(newCustomer))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -29,20 +29,24 @@ export const getCustomer = async (req,res) => {
     try {
         const existingCustomer = await Customer.findById(req.params.id);
         if (!existingCustomer){
-            return res.status(404).json({error:"Customer not found"})
+            return res.status(404).json(errorResponse("Customer Not Found"))
         }
-        return res.json({data: existingCustomer})
+        return res.json(successResponse(existingCustomer))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
 export const getCustomers = async (req,res) => {
     try {
-        const Customers = await Customer.find();
-        return res.json({data: Customers})
+        const organisation_id = req.params.id
+        const customers = await Customer.find({
+            $or: [{ deleted: null }],
+            organisation_id: organisation_id
+        });
+        return res.json(successResponse(customers))
     } catch (error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -71,12 +75,12 @@ export const updateCustomers = async(req,res) => {
         {new:true}
     );
         if (!customer){
-            return res.status(404).json({error: "Customer not found"})
+            return res.status(404).json(errorResponse("Customer Not Found"))
         }
         auditLogEntry(CustomerAuditLog,data, existingCustomer,req.params.id,req.user._id,"UPDATE")
-        return res.json({data:customer})
+        return res.json(successResponse(customer))
     } catch(error){
-        res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
@@ -84,22 +88,22 @@ export const deleteCustomers = async(req,res) => {
     try{        
         const customer = await Customer.findByIdAndDelete(req.params.id)
         if (!customer){
-            return res.status(404).json({error: "Customer not found"})
+            return res.status(404).json(errorResponse("Customer Not Found"))
         }
         
         auditLogEntry(CustomerAuditLog,"", "",req.params.id,req.user._id,"DELETE")
-        return res.json({data:customer})
+        return res.json(successResponse(customer))
     } catch(error){
-        res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 
 export const getCustomerAuditLogs = async(req, res) => {
     try{
         const logs = await CustomerAuditLog.find({customer_id: req.params.id})
-        return res.json({data: logs})
+        return res.json(successResponse(logs))
     } catch(error){
-        res.status(500).json({error: error.message})
+        return res.status(500).json(errorResponse("Internal Server Error"))
     }
 }
 

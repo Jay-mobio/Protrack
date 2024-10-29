@@ -12,3 +12,7 @@ export * from "./executionLogsModel.js";
 export * from "./userModel.js";
 export * from "./opportunityTrackerModel.js";
 export * from "./riskTrackerModel.js";
+export * from "./resourceModel.js";
+export * from "./statusModel.js";
+export * from "./departmentModel.js";
+export * from "./skillsModel.js";

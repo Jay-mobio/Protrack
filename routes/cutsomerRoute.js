@@ -4,7 +4,7 @@ import { createCutsomer, deleteCustomers, getCustomer, getCustomerAuditLogs, get
 const router = express.Router();
 
 router.post("",isAuthenticated,createCutsomer)
-router.get("",isAuthenticated,getCustomers);
+router.get("/get-customers/:id",isAuthenticated,getCustomers);
 router.get("/:id",isAuthenticated,getCustomer);
 router.put("/:id",isAuthenticated,updateCustomers);
 router.delete("/:id",isAuthenticated,deleteCustomers)
