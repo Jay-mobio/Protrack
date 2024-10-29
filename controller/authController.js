@@ -41,11 +41,12 @@ export const login = async (req, res) => {
             return res.status(401).json({ status:"Failed",data:[], message:"Invalid Email or Password" })
         }
         const token = jwt.sign({ email: user.email,id:user._id },JWT_SECRET, { expiresIn: '24h' });
-        return res.status(200).json({
-            status:"Success",
-            data: token,
-            message:"You have logged in successfully"
-        });
+        const response = {
+            status: true,
+            message:"Succssfully logged in",
+            data: {access_token: token}
+        }
+        return res.status(200).json(response);
     }catch(err){
         console.log(err);
         return res.status(500).json({error:"Internal Server Error"})
